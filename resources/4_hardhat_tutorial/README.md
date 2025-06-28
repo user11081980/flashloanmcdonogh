@@ -1,5 +1,5 @@
 # Commands
-* Run in working directory `resources/3_hardhat_tutorial`
+* Run in working directory `resources/4_hardhat_tutorial`
 * `npm init`
 * `npm install --save-dev hardhat`
 * `npx hardhat init`
@@ -11,5 +11,7 @@
 * `npx hardhat compile`
   * Compiles the Solidity smart contracts
 * `npx hardhat test`
+* `npx hardhat vars set ALCHEMY_API_KEY`
+* `npx hardhat vars set SEPOLIA_PRIVATE_KEY`
 * `npx hardhat ignition deploy ./ignition/modules/Token.js --network sepolia`
   * Where `sepolia` is a network defined in `hardhat.config.js`

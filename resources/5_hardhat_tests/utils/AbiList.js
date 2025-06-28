@@ -1,4 +1,9 @@
-const erc20ABI = ["function decimals() external view returns (uint8)"];
+const erc20ABI = [
+  "function decimals() external view returns (uint8)",
+  "function balanceOf(address owner) external view returns (uint256)",
+  "function symbol() view returns (string)",
+  "function transfer(address to, uint256 value) external returns (bool)"
+];
 
 const factoryABI = [
   "function getPair(address tokenA, address tokenB) external view returns (address pair)",
