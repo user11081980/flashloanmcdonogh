@@ -1,5 +1,5 @@
 # Commands
-* Run in working directory `resources/4_hardhat_tutorial`
+* Run from working directory `resources/4_hardhat_tutorial`
 * `npm init`
 * `npm install --save-dev hardhat`
 * `npx hardhat init`

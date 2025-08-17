@@ -1,7 +1,8 @@
 # Commands
-`npx hardhat node --fork https://eth-mainnet.g.alchemy.com/v2/_cOAd2OKemI3n-DhLIblOboDNbjJZ0zl`
-`npx hardhat test`
-`npm install --save-dev @nomiclabs/hardhat-ethers ethers`
+* Run from working directory `resources/5_hardhat_tests`
+* `npx hardhat node --fork https://eth-mainnet.g.alchemy.com/v2/_cOAd2OKemI3n-DhLIblOboDNbjJZ0zl`
+* `npx hardhat test`
+* `npm install --save-dev @nomiclabs/hardhat-ethers ethers`
 
 # Basic Sample Hardhat Project
 
