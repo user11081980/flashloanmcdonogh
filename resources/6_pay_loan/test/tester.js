@@ -6,7 +6,7 @@ const { abi } = require("../artifacts/contracts/interfaces/IERC20.sol/IERC20.jso
 describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
     const DECIMALS = 18;
     const FUNDING_AMOUNT = "100";
-    const BORROW_AMOUNT = "1";
+    const BORROW_AMOUNT = "10";
 
     const FACTORY_PANCAKE = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
     const FACTORY_APESWAP = "0x0841BD0B734E4F5853f0dD8d7Ea041c241fb0Da6";
@@ -24,7 +24,7 @@ describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
         flashSwapContract = null,
         fundAmountBigNumber = null,
         borrowAmountBigNumber = null,
-        txArbitrage = null,
+        arbitrageTransaction = null,
         gasUsedUSD;
 
     beforeEach(async () => {
@@ -40,7 +40,7 @@ describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
         expect(whaleBalance).not.equal("0");
 
         // Deploy smart contract, which must be defined in the default "contracts" directory. The response object is a factory with methods like deploy() used to deploy the contract.
-        const flashSwapContractFactory = await ethers.getContractFactory("ContractFlashTri");
+        const flashSwapContractFactory = await ethers.getContractFactory("PancakeFlashSwap");
         flashSwapContract = await flashSwapContractFactory.deploy();
         await flashSwapContract.deployed();
 
@@ -78,32 +78,26 @@ describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
         expect(Number(flashSwapBalance)).equal(Number(FUNDING_AMOUNT));
     });
 
-    it("executes the arbitrage", async () => {
-        // console.log(ethers.utils.formatUnits("8211184147365292123", 18));
-
-        txArbitrage = await flashSwapContract.triangularArbitrage(
-            [FACTORY_PANCAKE, FACTORY_PANCAKE, FACTORY_PANCAKE],
-            [ROUTER_PANCAKE, ROUTER_PANCAKE, ROUTER_PANCAKE],
-            [BUSD_ADDRESS, WBNB_ADDRESS, APYS_ADDRESS],
+    it("should execute the arbitrage", async () => {
+        // Returns a transaction object incl. incurred gas price
+        arbitrageTransaction = await flashSwapContract.startArbitrage(
+            BUSD_ADDRESS,
             borrowAmountBigNumber
         );
 
-        assert(txArbitrage);
+        assert(arbitrageTransaction);
 
-        // Print balances
-        const contractBalanceTOKENA = await flashSwapContract.getBalanceOfToken(BUSD_ADDRESS);
+        // Waits for the transaction to be mined and returns a transaction receipt incl. gas used
+        const transactionReceipt = await arbitrageTransaction.wait();
 
-        const formattedBalTOKENA = Number(
-            ethers.utils.formatUnits(contractBalanceTOKENA, 18)
-        );
-        const contractBalanceTOKENB = await flashSwapContract.getBalanceOfToken(WBNB_ADDRESS);
+        console.log("Gas price WEI: " + arbitrageTransaction.gasPrice.toString());
+        console.log("Gas used UNITS: " + transactionReceipt.gasUsed.toString());
 
-        console.log("Balance Of TOKEN A: " + formattedBalTOKENA);
+        // Retrieves balances
+        const busdBalanceBigNumber = await flashSwapContract.getBalanceOfToken(BUSD_ADDRESS);
+        const busdBalance = Number(ethers.utils.formatUnits(busdBalanceBigNumber, DECIMALS));
 
-        console.log(
-            "Balance Of TOKEN B: " +
-            ethers.utils.formatUnits(contractBalanceTOKENB, 18)
-        );
+        console.log("FlashSwap Contract balance BUSD: " + busdBalance);
     });
 
     /*describe("Arbitrage execution", () => {
