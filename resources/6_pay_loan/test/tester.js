@@ -16,6 +16,7 @@ describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
     // Following addresses are found in bscscan.com
     const BUSD_WHALE_ADDRESS = "0x174Ca62427d18b317b4226342db9E309c0fbd841";
     const BUSD_ADDRESS = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
+    const CROX_ADDRESS = "0x2c094F5A7D1146BB93850f629501eB749f6Ed491";
     const WBNB_ADDRESS = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
     const APYS_ADDRESS = "0x37dfACfaeDA801437Ff648A1559d73f4C40aAcb7";
 
@@ -97,7 +98,11 @@ describe("FlashSwap Contract (on Hardhat BNB Chain Network)", () => {
         const busdBalanceBigNumber = await flashSwapContract.getBalanceOfToken(BUSD_ADDRESS);
         const busdBalance = Number(ethers.utils.formatUnits(busdBalanceBigNumber, DECIMALS));
 
+        const croxBalanceBigNumber = await flashSwapContract.getBalanceOfToken(CROX_ADDRESS);
+        const croxBalance = Number(ethers.utils.formatUnits(croxBalanceBigNumber, DECIMALS));
+
         console.log("FlashSwap Contract balance BUSD: " + busdBalance);
+        console.log("FlashSwap Contract balance CROX: " + croxBalance);
     });
 
     /*describe("Arbitrage execution", () => {

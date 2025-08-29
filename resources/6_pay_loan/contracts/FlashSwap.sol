@@ -36,53 +36,29 @@ contract PancakeFlashSwap {
         return IERC20(tokenAddress).balanceOf(address(this));
     }
 
-    // PLACE A TRADE
-    // Executed placing a trade
-    function placeTrade(
-        address _fromToken,
-        address _toToken,
-        uint256 _amountIn
-    ) private returns (uint256) {
-        address pair = IUniswapV2Factory(PANCAKE_FACTORY_ADDRESS).getPair(
-            _fromToken,
-            _toToken
-        );
-        require(pair != address(0), "Pool does not exist");
+    // Executes a trade.
+    function placeTrade(address fromTokenAddress, address toTokenAddress, uint256 amount) private returns (uint256) {
+        // Gets the pair address from the factory.
+        address pairAddress = IUniswapV2Factory(PANCAKE_FACTORY_ADDRESS).getPair(fromTokenAddress, toTokenAddress);
 
-        // Calculate Amount Out
+        // Asserts that the address is not zero and therefore that the pair exists.
+        require(pairAddress != address(0), "Pool does not exist");
+
+        // Prepares the arguments to call router.getAmountsOut().
         address[] memory path = new address[](2);
-        path[0] = _fromToken;
-        path[1] = _toToken;
+        path[0] = fromTokenAddress;
+        path[1] = toTokenAddress;
 
-        uint256 amountRequired = IUniswapV2Router01(PANCAKE_ROUTER_ADDRESS)
-            .getAmountsOut(_amountIn, path)[1];
-
-        // console.log("amountRequired", amountRequired);
-
-        // Perform Arbitrage - Swap for another token
-        uint256 amountReceived = IUniswapV2Router01(PANCAKE_ROUTER_ADDRESS)
-            .swapExactTokensForTokens(
-                _amountIn, // amountIn
-                amountRequired, // amountOutMin
-                path, // path
-                address(this), // address to
-                deadline // deadline
-            )[1];
-
-        // console.log("amountRecieved", amountReceived);
-
-        require(amountReceived > 0, "Aborted Tx: Trade returned zero");
+        // Calculates the expected output amounts for a given path. For instance, if the path is BTC ETH DOGE, the first item in the returned array is the initial input amount in BTC, the second item is the amount of ETH resulting from swapping BTC by ETH, and the third item is the amount of DOGE resulting from swapping ETH to DOGE.
+        uint256 amountExpected = IUniswapV2Router01(PANCAKE_ROUTER_ADDRESS).getAmountsOut(amount, path)[1];
+        uint256 minimumAmountAccepted = amountExpected;
+        
+        // Performs the swap. The second argument protects against slippage, where the transaction is reverted if the amount received is less than that value. The returned array is similar to that of router.getAmountsOut().
+        uint256 amountReceived = IUniswapV2Router01(PANCAKE_ROUTER_ADDRESS).swapExactTokensForTokens(amount, minimumAmountAccepted, path, address(this), deadline)[1];
+        
+        require(amountReceived > 0, "Transaction reverted. Trade returned zero.");
 
         return amountReceived;
-    }
-
-    // CHECK PROFITABILITY
-    // Checks whether > output > input
-    function checkProfitability(
-        uint256 _input,
-        uint256 _output
-    ) private returns (bool) {
-        return _output > _input;
     }
 
     // Starts arbitrage from the given token and amount to borrow.
@@ -111,6 +87,7 @@ contract PancakeFlashSwap {
         IUniswapV2Pair(pairAddress).swap(amount0Out, amount1Out, address(this), data);
     }
 
+    // Callback, where amount0 and amount1 are the borrowed amounts and where one is zero.
     function pancakeCall(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {
         // Gets the pair address from the factory.
         address token0Address = IUniswapV2Pair(msg.sender).token0();
@@ -124,29 +101,27 @@ contract PancakeFlashSwap {
         // Decodes the data argument.
         (address borrowTokenAddress, uint256 borrowAmount, address contractAddress) = abi.decode(data, (address, uint256, address));
 
-        // Calculate the amount to repay at the end
+        // Calculates the fee and amount to repay.
         uint256 fee = ((borrowAmount * 3) / 997) + 1;
         uint256 amountToRepay = borrowAmount + fee;
 
         // DO ARBITRAGE
 
-        /*// Assign loan amount
-        uint256 loanAmount = _amount0 > 0 ? _amount0 : _amount1;
+        // Assign loan amount
+        uint256 amountAvailable = amount0 > 0 ? amount0 : amount1;
 
-        // Place Trades
-        uint256 trade1AcquiredCoin = placeTrade(BUSD, CROX, loanAmount);
-        uint256 trade2AcquiredCoin = placeTrade(CROX, CAKE, trade1AcquiredCoin);
-        uint256 trade3AcquiredCoin = placeTrade(CAKE, BUSD, trade2AcquiredCoin);
+        // Performs swaps, starting and ending with the same token.
+        uint256 amountReceivedSwap1 = placeTrade(BUSD_ADDRESS, CROX_ADDRESS, amountAvailable);
+        uint256 amountReceivedSwap2 = placeTrade(CROX_ADDRESS, CAKE_ADDRESS, amountReceivedSwap1);
+        uint256 amountReceivedSwap3 = placeTrade(CAKE_ADDRESS, BUSD_ADDRESS, amountReceivedSwap2);
 
-        // Check Profitability
-        bool profCheck = checkProfitability(amountToRepay, trade3AcquiredCoin);
-        require(profCheck, "Arbitrage not profitable");
+        // Asserts that the ending balance exceeds the borrowed amount.
+        //require(amountReceivedSwap3 > amountAvailable, "Arbitrage not profitable.");
+        
+        // Pays the contract.
+        //IERC20(BUSD_ADDRESS).transfer(contractAddress, amountReceivedSwap3 - amountToRepay);
 
-        // Pay Myself
-        IERC20 otherToken = IERC20(BUSD);
-        otherToken.transfer(myAddress, trade3AcquiredCoin - amountToRepay);*/
-
-        // Pay Loan Back
+        // Pays back the loan.
         IERC20(borrowTokenAddress).transfer(pairAddress, amountToRepay);
     }
 }
